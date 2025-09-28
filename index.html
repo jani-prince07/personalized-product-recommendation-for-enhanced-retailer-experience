@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DailyCart Pro — Grocery & Lifestyle Marketplace (Demo)</title>
+  <meta name="description" content="Browse fruits, vegetables, groceries, clothes & footwear — filters, comparison, calculators, dashboard" />
+  <style>
+    :root{
+      --accent:#16a34a; /* green */
+      --muted:#6b7280;
+      --bg:#f7fbf7;
+      --card:#ffffff;
+      --shadow:0 10px 22px rgba(15,23,42,0.06);
+      --radius:12px;
+      --max-width:1200px;
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+    }
+    html,body{height:100%;margin:0;background:var(--bg);color:#05272b}
+    a{color:var(--accent)}
+    img{max-width:100%;display:block}
+
+    .container{max-width:var(--max-width);margin:0 auto;padding:12px}
+    header{position:sticky;top:0;background:linear-gradient(180deg,rgba(22,163,74,0.06),transparent);backdrop-filter:blur(4px);z-index:50;border-bottom:1px solid rgba(5,39,43,0.04)}
+    .nav{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px}
+    .brand{display:flex;gap:10px;align-items:center}
+    .logo{width:44px;height:44px;background:var(--accent);color:white;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800}
+    .search{flex:1;display:flex;gap:8px;padding-left:12px}
+    .search input{flex:1;padding:10px;border-radius:10px;border:1px solid rgba(5,39,43,0.06)}
+    .btn{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:10px;cursor:pointer}
+    .ghost{background:transparent;border:1px solid rgba(5,39,43,0.06);padding:8px 10px;border-radius:10px}
+
+    /* Layout */
+    .layout{display:grid;grid-template-columns:1fr;gap:12px;padding:12px 0}
+    @media(min-width:980px){.layout{grid-template-columns:320px 1fr}}
+
+    /* Sidebar filters */
+    .sidebar{background:var(--card);padding:12px;border-radius:12px;box-shadow:var(--shadow)}
+    .filter-title{font-weight:700;margin-bottom:8px}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{padding:8px 10px;border-radius:999px;background:rgba(5,39,43,0.04);cursor:pointer}
+    .chip.active{background:var(--accent);color:#fff}
+    .range{display:flex;gap:8px;align-items:center}
+    .select,input[type=number],input[type=text]{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(5,39,43,0.06)}
+
+    /* content */
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:640px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media(min-width:1100px){.grid{grid-template-columns:repeat(3,1fr)}}
+
+    .card{background:var(--card);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+    .media{height:160px;background:#f0fff3;display:flex;align-items:center;justify-content:center}
+    .body{padding:12px;display:flex;flex-direction:column;gap:8px}
+    .title{font-weight:700}
+    .price{font-weight:800;color:var(--accent)}
+    .muted{color:var(--muted)}
+
+    /* compare bar */
+    .compare-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:var(--card);padding:10px 14px;border-radius:999px;box-shadow:var(--shadow);display:flex;gap:10px;align-items:center;z-index:70}
+    .compare-bar.hide{display:none}
+
+    /* dashboard */
+    .dashboard{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:12px}
+    @media(min-width:900px){.dashboard{grid-template-columns:repeat(4,1fr)}}
+    .stat{background:linear-gradient(180deg,#fff,#f7fff7);padding:12px;border-radius:12px;box-shadow:var(--shadow);text-align:center}
+
+    /* calculators */
+    .calc{display:flex;gap:8px;flex-wrap:wrap}
+    .calc input{padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)}
+
+    /* cart floating */
+    .cart-bar{position:fixed;right:18px;bottom:18px;background:var(--card);padding:10px;border-radius:12px;box-shadow:var(--shadow);display:flex;gap:8px;align-items:center;z-index:60}
+    .cart-count{background:var(--accent);color:white;padding:6px 8px;border-radius:999px;font-weight:800}
+
+    /* modal */
+    .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.45);z-index:80}
+    .modal-card{width:95%;max-width:920px;background:white;padding:14px;border-radius:12px}
+
+    footer{padding:18px;text-align:center;color:var(--muted)}
+
+    /* tiny helpers */
+    .row{display:flex;gap:8px;align-items:center}
+    .center{display:flex;align-items:center;justify-content:center}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand">
+        <div class="logo">DC</div>
+        <div>
+          <div style="font-weight:800">DailyCart Pro</div>
+          <div style="font-size:13px;color:var(--muted)">Fruits · Grocery · Vegetables · Clothes · Footwear</div>
+        </div>
+      </div>
+
+      <div class="search">
+        <input id="q" placeholder="Search products, brands or categories" aria-label="Search" />
+        <select id="globalCategory" class="select" style="max-width:160px">
+          <option value="all">All</option>
+          <option value="fruits">Fruits</option>
+          <option value="grocery">Grocery</option>
+          <option value="vegetables">Vegetables</option>
+          <option value="clothes">Clothes</option>
+          <option value="footwear">Footwear</option>
+        </select>
+        <button class="btn" id="openCartBtn">Cart (<span id="cartCount">0</span>)</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- DASHBOARD STATS -->
+    <div class="dashboard" id="dashboard">
+      <!-- populated by JS -->
+    </div>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="filter">
+          <div class="filter-title">Categories</div>
+          <div class="chips" id="categoryChips">
+            <div class="chip active" data-cat="all">All</div>
+            <div class="chip" data-cat="fruits">Fruits</div>
+            <div class="chip" data-cat="vegetables">Vegetables</div>
+            <div class="chip" data-cat="grocery">Grocery</div>
+            <div class="chip" data-cat="clothes">Clothes</div>
+            <div class="chip" data-cat="footwear">Footwear</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <div class="filter-title">Price range (₹)</div>
+          <div class="range">
+            <input id="minPrice" type="number" placeholder="Min" />
+            <input id="maxPrice" type="number" placeholder="Max" />
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <div class="filter-title">Sort</div>
+          <select id="sortBy" class="select">
+            <option value="relevance">Relevance</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="rating-desc">Rating</option>
+          </select>
+        </div>
+
+        <div style="margin-top:12px">
+          <div class="filter-title">Calculators</div>
+          <div class="stack">
+            <div class="sublabel">Cart Total</div>
+            <div class="row" style="margin-bottom:8px"><button class="btn" id="calcTotalBtn">Recalculate</button><div id="calcTotalRes" class="muted">₹ 0</div></div>
+            <div class="sublabel">Savings Estimator</div>
+            <div class="row"><input id="origPrice" type="number" placeholder="Original ₹" /><input id="discPrice" type="number" placeholder="Discounted ₹" /><button class="btn" id="calcSave">Calc</button></div>
+            <div id="saveRes" class="muted" style="margin-top:8px">You save: ₹ 0 (0%)</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <div class="filter-title">Cart Actions</div>
+          <button class="btn" id="clearCart">Clear Cart</button>
+        </div>
+      </aside>
+
+      <section>
+        <div class="topbar">
+          <div><div style="font-weight:800">Products</div><div style="color:var(--muted);font-size:13px">Showing <span id="resultCount">0</span> items</div></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="viewMode" class="select">
+              <option value="grid">Grid</option>
+              <option value="list">List</option>
+            </select>
+            <button class="ghost" id="viewCompare">Compare (<span id="compareCount">0</span>)</button>
+          </div>
+        </div>
+
+        <div id="products" class="grid"></div>
+
+        <div style="height:12px"></div>
+
+        <div class="section">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-weight:800">Side-by-side Comparison</div>
+            <div class="muted">Select up to 3 items and click Compare</div>
+          </div>
+          <div id="comparePanel" style="display:grid;grid-template-columns:1fr;gap:8px"></div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <!-- Compare bar -->
+  <div id="compareBar" class="compare-bar hide">
+    <div class="sublabel">Compare selected (<span id="compareBarCount">0</span>)</div>
+    <button class="ghost" id="openCompare">Open</button>
+    <button class="btn" id="compareNow">Compare Now</button>
+  </div>
+
+  <div id="cartBar" class="cart-bar" style="display:none">
+    <div style="font-weight:800">Cart</div>
+    <div class="cart-count" id="floatingCount">0</div>
+    <button class="ghost" id="openCart">Open</button>
+    <button class="btn" id="checkout">Checkout</button>
+  </div>
+
+  <footer>
+    © <span id="year"></span> DailyCart Pro — Demo UI
+  </footer>
+
+  <script>
+    // Demo product dataset with images and specs
+    const PRODUCTS = [
+      {id:1,category:'fruits',title:'Banana (1 dozen)',brand:'FreshFarm',price:60,rating:4.2,weight:'1 dozen',specs:{origin:'India',pack:'Loose'},img:'https://www.rsadaycaresupplies.com/assets/images/bananas.jpeg'},
+      {id:2,category:'fruits',title:'Apple (1 kg)',brand:'Orchard',price:180,rating:4.6,weight:'1 kg',specs:{origin:'Shimla',pack:'Net'},img:'https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=d8f1a7b6d20d'},
+      {id:3,category:'vegetables',title:'Tomato (1 kg)',brand:'GreenLeaf',price:40,rating:4.1,weight:'1 kg',specs:{origin:'Local',pack:'Loose'},img:'https://eaglefox.in/wp-content/uploads/2020/04/fresh-tomato-1024x1024.jpg'},
+      {id:4,category:'grocery',title:'Rice (5 kg)',brand:'GoldenGrain',price:420,rating:4.7,weight:'5 kg',specs:{type:'Basmati',origin:'India'},img:'https://static.vecteezy.com/system/resources/previews/037/349/469/non_2x/ai-generated-a-handful-of-long-grain-white-rice-spills-out-on-the-wooden-table-food-light-natural-colors-high-quality-ai-generative-photo.jpg'},
+      {id:5,category:'clothes',title:'Plain T-Shirt (M)',brand:'CottonCo',price:449,rating:4.0,weight:'200 g',specs:{material:'100% Cotton',size:'M'},img:'https://images.bewakoof.com/original/white-half-sleeve-t-shirt-men-s-plain-t-shirts-105-1538998624.jpg'},
+      {id:6,category:'footwear',title:'Sneakers',brand:'StepUp',price:1299,rating:4.3,weight:'800 g',specs:{material:'Canvas',size:'9'},img:'https://res.cloudinary.com/sagacity/image/upload/c_crop,h_3084,w_4626,x_0,y_0/c_limit,dpr_auto,f_auto,fl_lossy,q_80,w_1080/shutterstock_1123158938_uvcada.jpg'},
+      {id:7,category:'grocery',title:'Olive Oil (500ml)',brand:'NaturePure',price:599,rating:4.5,weight:'500 ml',specs:{type:'Extra Virgin',origin:'Italy'},img:'https://daganghalal.blob.core.windows.net/25631/Product/1000x1000__oliveoil1000x1000-1618469866112.jpg'},
+      {id:8,category:'clothes',title:'Jeans (32)',brand:'DenimHouse',price:999,rating:4.4,weight:'600 g',specs:{material:'Denim',size:'32'},img:'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=6c6c'},
+      {id:9,category:'vegetables',title:'Potato (1 kg)',brand:'FarmFresh',price:30,rating:4.0,weight:'1 kg',specs:{origin:'Local',pack:'Loose'},img:'https://www.healthbenefitstimes.com/9/gallery/potato-1/Potatoes.jpg'}
+    ];
+
+    // App state
+    let state = {
+      q:'', category:'all', minPrice:null, maxPrice:null, sort:'relevance', view:'grid', cart:{}, compare:[]
+    }
+
+    // DOM refs
+    const productsEl = document.getElementById('products');
+    const resultCount = document.getElementById('resultCount');
+    const cartCount = document.getElementById('cartCount');
+    const floatingCount = document.getElementById('floatingCount');
+    const cartBar = document.getElementById('cartBar');
+    const compareBar = document.getElementById('compareBar');
+
+    // storage key
+    const CART_KEY = 'dailycart_pro_cart_v1';
+
+    function loadCart(){
+      try{ const raw = localStorage.getItem(CART_KEY); state.cart = raw? JSON.parse(raw) : {}; }catch(e){state.cart={}} updateCartUI();
+    }
+    function saveCart(){ localStorage.setItem(CART_KEY, JSON.stringify(state.cart)); updateCartUI(); }
+
+    function updateCartUI(){
+      const totalItems = Object.values(state.cart).reduce((s,x)=>s+x,0);
+      cartCount.textContent = totalItems; floatingCount.textContent = totalItems;
+      cartBar.style.display = totalItems>0 ? 'flex' : 'none';
+      // update dashboard small stat
+      renderDashboard();
+    }
+
+    function renderProductCard(p){
+      const card = document.createElement('article'); card.className='card';
+      card.innerHTML = `
+        <div class="media"><img loading="lazy" src="${p.img}" alt="${p.title}" style="object-fit:cover;height:100%;width:100%"/></div>
+        <div class="body">
+          <div style="display:flex;justify-content:space-between;align-items:start"><div><div class="title">${p.title}</div><div class="muted">${p.brand} · ${p.category}</div></div><div class="price">₹ ${p.price}</div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+            <div class="muted">⭐ ${p.rating}</div>
+            <div style="display:flex;gap:8px">
+              <button class="ghost" onclick="viewProduct(${p.id})">Details</button>
+              <button class="ghost" onclick="toggleCompare(${p.id})">Compare</button>
+              <button class="btn" onclick="addToCart(${p.id})">Add</button>
+            </div>
+          </div>
+        </div>
+      `;
+      return card;
+    }
+
+    function renderProducts(list){
+      productsEl.innerHTML='';
+      resultCount.textContent = list.length;
+      list.forEach(p=> productsEl.appendChild(renderProductCard(p)) );
+    }
+
+    function applyFilters(){
+      let list = PRODUCTS.slice();
+      const q = document.getElementById('q').value.trim().toLowerCase(); state.q=q;
+      const cat = state.category;
+      const minP = Number(document.getElementById('minPrice').value || 0);
+      const maxP = Number(document.getElementById('maxPrice').value || 0);
+      const sort = document.getElementById('sortBy').value;
+
+      if(q) list = list.filter(p=> (p.title + ' ' + p.brand + ' ' + p.category).toLowerCase().includes(q) );
+      if(cat && cat!=='all') list = list.filter(p=>p.category===cat);
+      if(minP>0) list = list.filter(p=>p.price>=minP);
+      if(maxP>0) list = list.filter(p=>p.price<=maxP);
+
+      if(sort==='price-asc') list.sort((a,b)=>a.price-b.price);
+      if(sort==='price-desc') list.sort((a,b)=>b.price-a.price);
+      if(sort==='rating-desc') list.sort((a,b)=>b.rating-a.rating);
+
+      renderProducts(list);
+    }
+
+    // compare
+    function toggleCompare(id){
+      const idx = state.compare.indexOf(id);
+      if(idx===-1){ if(state.compare.length>=3){ alert('You can compare up to 3 items'); return } state.compare.push(id); } else { state.compare.splice(idx,1); }
+      updateCompareUI();
+    }
+    function updateCompareUI(){
+      document.getElementById('compareCount').textContent = state.compare.length;
+      document.getElementById('compareBarCount').textContent = state.compare.length;
+      if(state.compare.length>0){ compareBar.classList.remove('hide'); } else { compareBar.classList.add('hide'); }
+      renderComparePanel();
+    }
+
+    function renderComparePanel(){
+      const panel = document.getElementById('comparePanel'); panel.innerHTML='';
+      if(state.compare.length===0){ panel.innerHTML = '<div class="muted">No items selected for comparison</div>'; return }
+      const selected = PRODUCTS.filter(p=>state.compare.includes(p.id));
+      // header row
+      const grid = document.createElement('div'); grid.style.display='grid'; grid.style.gridTemplateColumns = `repeat(${selected.length},1fr)`; grid.style.gap='8px';
+      selected.forEach(s=>{
+        const d = document.createElement('div'); d.style.padding='8px'; d.style.borderRadius='8px'; d.style.background='#fff'; d.innerHTML = `<div style="font-weight:700">${s.title}</div><div class="muted">${s.brand}</div><div class="sublabel">₹ ${s.price}</div><div style="margin-top:8px">${Object.entries(s.specs).map(([k,v])=>`<div class="muted">${k}: ${v}</div>`).join('')}</div>`;
+        grid.appendChild(d);
+      });
+      panel.appendChild(grid);
+    }
+
+    function openCompareModal(){
+      if(state.compare.length<2){ alert('Select at least 2 items to compare'); return }
+      const selected = PRODUCTS.filter(p=>state.compare.includes(p.id));
+      const m = document.createElement('div'); m.className='modal';
+      m.innerHTML = `<div class="modal-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-weight:800">Compare (${selected.length})</div><button class="ghost" id="closeCmp">Close</button></div><div style="display:grid;grid-template-columns:repeat(${selected.length},1fr);gap:10px">${selected.map(s=>`<div style="padding:8px;border-radius:8px;background:#f8fafc"><div style="font-weight:700">${s.title}</div><div class="sublabel">${s.brand}</div><div class="muted">₹ ${s.price}</div><div style="margin-top:8px">${Object.entries(s.specs).map(([k,v])=>`<div class="muted">${k}: ${v}</div>`).join('')}</div></div>`).join('')}</div></div>`;
+      document.body.appendChild(m);
+      document.getElementById('closeCmp').addEventListener('click',()=>m.remove());
+    }
+
+    // details & cart
+    function viewProduct(id){ const p = PRODUCTS.find(x=>x.id===id); if(!p) return; const m = document.createElement('div'); m.className='modal'; m.innerHTML = `<div class="modal-card"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:800">${p.title}</div><button class="ghost" id="closeModal">Close</button></div><div style="display:flex;gap:12px;margin-top:12px"><img src="${p.img}" style="width:40%;border-radius:8px"/><div><div style="font-weight:700">₹ ${p.price}</div><div class="muted">${p.brand} · ${p.category}</div><div style="margin-top:8px">${Object.entries(p.specs).map(([k,v])=>`<div class="muted">${k}: ${v}</div>`).join('')}</div><p style="margin-top:8px" class="muted">Rating: ⭐ ${p.rating}</p><div style="margin-top:12px;display:flex;gap:8px"><button class="btn" id="addNow">Add to Cart</button><button class="ghost" id="close2">Cancel</button></div></div></div></div>`; document.body.appendChild(m); document.getElementById('closeModal').addEventListener('click',()=>m.remove()); document.getElementById('close2').addEventListener('click',()=>m.remove()); document.getElementById('addNow').addEventListener('click',()=>{ addToCart(p.id); m.remove(); }); }
+
+    function addToCart(id){ state.cart[id] = (state.cart[id] || 0) + 1; saveCart(); }
+    function removeFromCart(id){ if(state.cart[id]){ state.cart[id]--; if(state.cart[id]<=0) delete state.cart[id]; saveCart(); } }
+    function clearCart(){ state.cart = {}; saveCart(); }
+
+    window.addToCart = addToCart; window.removeFromCart = removeFromCart; window.toggleCompare = toggleCompare; window.openCompareModal = openCompareModal;
+
+    // cart modal
+    function openCart(){ const m = document.createElement('div'); m.className='modal'; const items = Object.keys(state.cart).map(id=>{ const p = PRODUCTS.find(x=>x.id==id); const qty = state.cart[id]; return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.04)"><div><div style="font-weight:700">${p.title}</div><div class="muted">₹ ${p.price} · ${p.brand}</div></div><div style="display:flex;gap:8px;align-items:center"><button class="ghost" onclick="removeFromCart(${p.id})">-</button><div>${qty}</div><button class="ghost" onclick="addToCart(${p.id})">+</button></div></div>` }).join(''); const total = Object.keys(state.cart).reduce((s,id)=>{ const p = PRODUCTS.find(x=>x.id==id); return s + (p.price * state.cart[id]); },0);
+      m.innerHTML = `<div class="modal-card"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:800">Your Cart</div><button class="ghost" id="closeCart">Close</button></div><div style="max-height:60vh;overflow:auto;margin-top:12px">${items || '<div class="muted">Cart is empty</div>'}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px"><div style="font-weight:800">Total: ₹ ${total}</div><div style="display:flex;gap:8px"><button class="ghost" id="clearBtn">Clear</button><button class="btn" id="placeOrder">Place Order</button></div></div></div>`;
+      document.body.appendChild(m);
+      document.getElementById('closeCart').addEventListener('click',()=>m.remove());
+      document.getElementById('clearBtn').addEventListener('click',()=>{ if(confirm('Clear cart?')){ clearCart(); m.remove(); } });
+      document.getElementById('placeOrder').addEventListener('click',()=>{ if(Object.keys(state.cart).length===0){ alert('Cart empty'); return } alert('Order placed — this is a demo.'); clearCart(); m.remove(); }); }
+    window.openCart = openCart;
+
+    // calculators
+    document.getElementById('calcSave').addEventListener('click',()=>{
+      const orig = Number(document.getElementById('origPrice').value || 0);
+      const disc = Number(document.getElementById('discPrice').value || 0);
+      if(orig<=0 || disc<=0 || disc>orig){ document.getElementById('saveRes').textContent='Enter valid prices'; return }
+      const save = orig - disc; const pct = Math.round((save/orig)*100);
+      document.getElementById('saveRes').textContent = `You save: ₹ ${save} (${pct}%)`;
+    });
+
+    document.getElementById('calcTotalBtn').addEventListener('click',()=>{
+      const total = Object.keys(state.cart).reduce((s,id)=>{ const p = PRODUCTS.find(x=>x.id==id); return s + (p.price * state.cart[id]); },0);
+      document.getElementById('calcTotalRes').textContent = `₹ ${total}`;
+    });
+
+    // dashboard
+    function renderDashboard(){
+      const el = document.getElementById('dashboard'); el.innerHTML='';
+      const totalItems = PRODUCTS.length;
+      const cartItems = Object.values(state.cart).reduce((s,x)=>s+x,0);
+      const cartTotal = Object.keys(state.cart).reduce((s,id)=>{ const p = PRODUCTS.find(x=>x.id==id); return s + (p.price * state.cart[id]); },0);
+      const categories = [...new Set(PRODUCTS.map(p=>p.category))];
+
+      const stats = [
+        {title:'Total Products',value:totalItems},
+        {title:'In Cart (qty)',value:cartItems},
+        {title:'Cart Value',value:`₹ ${cartTotal}`},
+        {title:'Categories',value:categories.length}
+      ];
+      stats.forEach(s=>{ const d = document.createElement('div'); d.className='stat'; d.innerHTML=`<div style="font-weight:800">${s.value}</div><div class="muted">${s.title}</div>`; el.appendChild(d); });
+    }
+
+    // init interactions
+    document.getElementById('q').addEventListener('input',()=>applyFilters());
+    document.getElementById('minPrice').addEventListener('input',()=>applyFilters());
+    document.getElementById('maxPrice').addEventListener('input',()=>applyFilters());
+    document.getElementById('sortBy').addEventListener('change',()=>applyFilters());
+    document.getElementById('globalCategory').addEventListener('change',e=>{ state.category = e.target.value; document.querySelectorAll('#categoryChips .chip').forEach(c=>c.classList.remove('active')); const chip = document.querySelector(`#categoryChips .chip[data-cat="${state.category}"]`); if(chip) chip.classList.add('active'); applyFilters(); });
+
+    document.querySelectorAll('#categoryChips .chip').forEach(ch=>{ ch.addEventListener('click',()=>{ document.querySelectorAll('#categoryChips .chip').forEach(c=>c.classList.remove('active')); ch.classList.add('active'); state.category = ch.dataset.cat; document.getElementById('globalCategory').value = state.category; applyFilters(); }) });
+
+    document.getElementById('viewCompare').addEventListener('click',()=>openCompareModal());
+    document.getElementById('openCompare').addEventListener('click',()=>openCompareModal());
+    document.getElementById('compareNow').addEventListener('click',()=>openCompareModal());
+
+    document.getElementById('openCartBtn').addEventListener('click',openCart);
+    document.getElementById('openCart').addEventListener('click',openCart);
+    document.getElementById('checkout').addEventListener('click',openCart);
+    document.getElementById('clearCart').addEventListener('click',()=>{ if(confirm('Clear cart?')) clearCart(); });
+
+    // keyboard escape closes modal
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal').forEach(m=>m.remove()); });
+
+    // boot
+    document.getElementById('year').textContent = new Date().getFullYear();
+    loadCart(); renderDashboard(); applyFilters(); updateCompareUI();
+
+  </script>
+</body>
+</html>
